@@ -33,7 +33,7 @@ To enable infinite scroll on your site, simply add the `[fyp_infinite_scroll]` s
 
 == Shortcode Parameters ==
 
-The `[fypinpo_infinite_posts]` shortcode supports the following parameters to customize its behavior:
+The `[fyplugins_infinite_posts]` shortcode supports the following parameters to customize its behavior:
 
 - `pagination` (string): Type of pagination to use Accept 'scroll', 'button' or 'none'. Default is `scroll`.
 - `posts_per_page` (integer): Number of posts to load per batch. Default is `10`.
@@ -47,7 +47,7 @@ The `[fypinpo_infinite_posts]` shortcode supports the following parameters to cu
 
 **Example usage:**
 
-`[fypinpo_infinite_scroll posts_per_page="6" post_type="post" category="news" order="ASC"]`
+`[fyplugins_infinite_scroll posts_per_page="6" post_type="post" category="news" order="ASC"]`
 
 == Customizing Post Templates ==
 
@@ -65,7 +65,7 @@ The plugin will automatically use your custom template if it exists in your them
 
 1. Upload the plugin files to the `/wp-content/plugins/fyp-infinite-posts` directory, or install the plugin through the WordPress plugins screen directly.
 2. Activate the plugin through the 'Plugins' screen in WordPress.
-3. Include the shortcode [fyp_infinite_scroll] in your pages / posts
+3. Include the shortcode [fyplugins_infinite_posts] in your pages / posts
 
 == Frequently Asked Questions ==
 

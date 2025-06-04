@@ -192,20 +192,24 @@ function fypinpo_posts_list($post_type, $category, $posts_per_page, $offset, $or
 
     ob_start();
 
-    if (file_exists(get_template_directory() . '/fyp-infinite-posts/' . $post_type . '-item.php')) {
-        // Use the theme's template if it exists
-        $template = get_template_directory() . '/fyp-infinite-posts/' . $post_type . '-item.php';
-    }
-    else if (file_exists(FYPINPO_PLUGIN_DIR . 'templates/' . $post_type . '-item.php')) {
-        // Use the plugin's template if it exists
-        $template = FYPINPO_PLUGIN_DIR . 'templates/' . $post_type . '-item.php';
-    }
-    else {
-        // Fallback to a default message if no template is found
-        $template = FYPINPO_PLUGIN_DIR . 'templates/default-item.php';
-    }
-
     if ($query->have_posts()) {
+        if (file_exists(get_stylesheet_directory() . '/fyplugins/infinite-posts/' . $post_type . '-item.php')) {
+            // Use the child theme's template if it exists
+            $template = get_stylesheet_directory() . '/fyplugins/infinite-posts/' . $post_type . '-item.php';
+        }
+        else if (file_exists(get_template_directory() . '/fyplugins/infinite-posts/' . $post_type . '-item.php')) {
+            // Use the parent theme's template if it exists
+            $template = get_template_directory() . '/fyplugins/infinite-posts/' . $post_type . '-item.php';
+        }
+        else if (file_exists(FYPINPO_PLUGIN_DIR . 'templates/' . $post_type . '-item.php')) {
+            // Use the plugin's template if it exists
+            $template = FYPINPO_PLUGIN_DIR . 'templates/' . $post_type . '-item.php';
+        }
+        else {
+            // Fallback to a default template
+            $template = FYPINPO_PLUGIN_DIR . 'templates/default-item.php';
+        }
+
         while ($query->have_posts()) {
             $query->the_post();
             include($template);
