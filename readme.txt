@@ -5,7 +5,7 @@ Tags: infinite scroll, ajax, posts, load more, pagination
 Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -29,7 +29,7 @@ This plugin is easy to set up and integrates seamlessly with any WordPress theme
 
 == Usage ==
 
-To enable infinite scroll on your site, simply add the `[fyp_infinite_scroll]` shortcode to any page or post where you want infinite scrolling functionality.
+To enable infinite scroll on your site, simply add the `[fyplugins_infinite_posts]` shortcode to any page or post where you want infinite scrolling functionality.
 
 == Shortcode Parameters ==
 
@@ -39,15 +39,16 @@ The `[fyplugins_infinite_posts]` shortcode supports the following parameters to 
 - `posts_per_page` (integer): Number of posts to load per batch. Default is `10`.
 - `offset` (integer): Number of posts to skip for the first batch. Default is `0`.
 - `post_type` (string): The post type to display (e.g., `post`, `page`, or any custom post type). Default is `post`.
-- `category` (string or integer): Limit posts to a specific category (slug or ID). Optional.
+- `category` (string or bool): If string, limit posts to a specific category slug. If true, the shortcode will detect the current category page. If false, categories will be ignored. Default is true.
 - `order` (string): Sort order of posts. Accepts `ASC` or `DESC`. Default is `DESC`.
 - `orderby` (string): Field to sort posts by (e.g., `date`, `title`, `rand`). Default is `date`.
 - `btn_text` (string): Text for the "Load More" button (if enabled). Default is `Load More`.
 - `end_message` (string): Text to display when all posts are already loaded. Default is `No more posts to load.`.
+- `class` (string): Additionnal CSS class for the wrapper. Default is empty.
 
 **Example usage:**
 
-`[fyplugins_infinite_scroll posts_per_page="6" post_type="post" category="news" order="ASC"]`
+`[fyplugins_infinite_posts posts_per_page="6" post_type="post" category="news" order="ASC"]`
 
 == Customizing Post Templates ==
 
@@ -56,8 +57,8 @@ FYP Infinite Posts allows you to customize how each type of post is displayed by
 **How to override the post template:**
 
 1. In your theme or child theme, create a folder '/fyp-infinite-posts/'.
-2. Copy/paste here the file 'wp-content/plugins/fyp-infinite-scroll/templates/post-item.php' or create a file named {post type}-item.php (e.g., `post-item.php` for blog posts or any other native or custom post type).
-3. Edit this file to match your desired post layout and design.
+2. Copy/paste the file 'wp-content/plugins/fyp-infinite-pos/templates/post-item.php' or create a file named {post type}-item.php (e.g., `post-item.php` for blog posts) in 'wp-content/{your-thee}/fyplugins/infinite-posts/'.
+3. Edit this file to match your desired item layout and design.
 
 The plugin will automatically use your custom template if it exists in your theme. This allows you to seamlessly integrate infinite scroll posts with your website's unique style.
 
@@ -88,6 +89,9 @@ FYP Infinite Posts is lightweight and optimized for performance. It only loads a
 
 == Changelog ==
 
+= 1.0.1 =
+* Add class parameter to the shortcode
+
 = 1.0.0 =
 * Initial release
 
@@ -95,3 +99,4 @@ FYP Infinite Posts is lightweight and optimized for performance. It only loads a
 
 - Add customizable spinners.
 - Create Gutemberg block.
+- Implement admin page
