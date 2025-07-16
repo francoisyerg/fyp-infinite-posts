@@ -3,11 +3,11 @@
 /**
  * Plugin Name: FYP Infinite Posts
  * Description: A plugin to display infinite posts with various pagination options.
- * Version: 1.0.1
+ * Version: 1.0.2
  * Requires at least: 5.8
  * Tested up to: 6.8
  * Requires PHP: 7.4
- * Stable tag: 1.0.1
+ * Stable tag: 1.0.2
  * Author: François Yerg
  * Author URI: https://www.francoisyerg.net
  * License: GPL2
@@ -29,11 +29,12 @@ define('FYPINPO_PLUGIN_DIR', plugin_dir_path(__FILE__));
  * Shortcode To display infinite posts
  * Usage: [fyplugins_infinite_posts pagination="scroll" post_type="post" categories="" posts_per_page="10" offset="0" orderby="date" order="DESC" btn_text="Load more" end_message="No more posts to load." class="]
  */
-add_shortcode('fyplugins_infinite_posts', function ($atts) {
+add_shortcode('fyplugins_infinite_posts', function ($atts): string {
     $atts = shortcode_atts([
         'pagination' => 'scroll',
         'post_type' => 'post',
         'category' => true,
+        'taxonomy' => true,
         'posts_per_page' => 10,
         'offset' => 0,
         'orderby' => 'date',
@@ -45,11 +46,12 @@ add_shortcode('fyplugins_infinite_posts', function ($atts) {
 
     // Check for categories
     $category = 0;
-    if ($atts['category'] === true) {
+    if ($atts['category'] == true) {
         if (is_category()) {
             $category = get_queried_object();
             if ($category && !is_wp_error($category)) {
                 $category = $category->term_id;
+
             }
         } elseif (is_singular($atts['post_type'])) {
             $terms = get_the_terms(get_the_ID(), 'category');
@@ -61,6 +63,46 @@ add_shortcode('fyplugins_infinite_posts', function ($atts) {
         $term = get_term_by('slug', $atts['category'], 'category');
         if ($term && !is_wp_error($term)) {
             $category = $term->term_id;
+        }
+    }
+
+    // Check for taxonomy
+    $taxonomy = '';
+    $term = '';
+    if ($atts['taxonomy'] == true) {
+        if (is_tax()) {
+            $term_obj = get_queried_object();
+            if ($term_obj && !is_wp_error($term_obj)) {
+                $taxonomy = $term_obj->taxonomy;
+                $term = $term_obj->term_id;
+            }
+        } elseif (is_tag()) {
+            $term_obj = get_queried_object();
+            if ($term_obj && !is_wp_error($term_obj)) {
+                $taxonomy = 'post_tag';
+                $term = $term_obj->term_id;
+            }
+        } elseif (is_singular($atts['post_type'])) {
+            // Get all taxonomies for this post type
+            $taxonomies = get_object_taxonomies($atts['post_type']);
+            foreach ($taxonomies as $tax) {
+                if ($tax !== 'category') { // Skip category as it's handled separately
+                    $terms = get_the_terms(get_the_ID(), $tax);
+                    if (!is_wp_error($terms) && !empty($terms)) {
+                        $taxonomy = $tax;
+                        $term = $terms[0]->term_id;
+                        break;
+                    }
+                }
+            }
+        }
+    } elseif (!empty($atts['taxonomy'])) {
+        $taxonomy = sanitize_text_field($atts['taxonomy']);
+        if (!empty($atts['term'])) {
+            $term_obj = get_term_by('slug', $atts['term'], $taxonomy);
+            if ($term_obj && !is_wp_error($term_obj)) {
+                $term = $term_obj->term_id;
+            }
         }
     }
 
@@ -93,9 +135,9 @@ add_shortcode('fyplugins_infinite_posts', function ($atts) {
 
     ob_start();
 
-    echo '<div id="fypinpo_' . esc_attr($id) . '_wrapper" class="fypinpo_wrapper' . (!empty($class) ? ' '.esc_html($class) : "") . '" data-id="' . esc_attr($id) . '" data-pagination="' . esc_attr($pagination) . '" data-post_type="'.esc_attr($post_type).'" data-category="'.esc_attr($category).'" data-page="2" data-posts_per_page="'.esc_attr($posts_per_page).'" data-offset="'.esc_attr($offset).'" data-orderby="'.esc_attr($orderby).'" data-order="'.esc_attr($order).'">';
+    echo '<div id="fypinpo_' . esc_attr($id) . '_wrapper" class="fypinpo_wrapper' . (!empty($class) ? ' '.esc_html($class) : "") . '" data-id="' . esc_attr($id) . '" data-pagination="' . esc_attr($pagination) . '" data-post_type="'.esc_attr($post_type).'" data-category="'.esc_attr($category).'" data-taxonomy="'.esc_attr($taxonomy).'" data-term="'.esc_attr($term).'" data-page="2" data-posts_per_page="'.esc_attr($posts_per_page).'" data-offset="'.esc_attr($offset).'" data-orderby="'.esc_attr($orderby).'" data-order="'.esc_attr($order).'">';
     echo '<div id="fypinpo_' . esc_attr($id) . '_posts" class="fypinpo_posts">';
-    echo wp_kses_post(fypinpo_posts_list($post_type, $category, $posts_per_page, $offset, $orderby, $order, 1));
+    echo wp_kses_post(fypinpo_posts_list($post_type, $category, $taxonomy, $term, $posts_per_page, $offset, $orderby, $order, 1));
     echo '</div>';
 
     if ($atts['pagination'] !== 'none') {
@@ -127,7 +169,7 @@ add_shortcode('fyplugins_infinite_posts', function ($atts) {
  */
 add_action('wp_ajax_fypinpo_load_more', 'fypinpo_ajax_load_more');
 add_action('wp_ajax_nopriv_fypinpo_load_more', 'fypinpo_ajax_load_more');
-function fypinpo_ajax_load_more()
+function fypinpo_ajax_load_more(): void
 {
     // Check nonce for security
     if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'fypinpo_load_more_nonce')) {
@@ -137,13 +179,15 @@ function fypinpo_ajax_load_more()
 
     $post_type = isset($_POST['post_type']) ? sanitize_text_field(wp_unslash($_POST['post_type'])) : 'post';
     $category = isset($_POST['category']) ? intval($_POST['category']) : '';
+    $taxonomy = isset($_POST['taxonomy']) ? sanitize_text_field(wp_unslash($_POST['taxonomy'])) : '';
+    $term = isset($_POST['term']) ? intval($_POST['term']) : '';
     $page = isset($_POST['page']) ? intval($_POST['page']) : 1;
     $posts_per_page = isset($_POST['posts_per_page']) ? intval($_POST['posts_per_page']) : 10;
     $offset = isset($_POST['offset']) ? intval($_POST['offset']) : 0;
     $orderby = isset($_POST['orderby']) ? sanitize_text_field(wp_unslash($_POST['orderby'])) : 'date';
     $order = isset($_POST['order']) ? sanitize_text_field(wp_unslash($_POST['order'])) : 'DESC';
 
-    $html =  fypinpo_posts_list($post_type, $category, $posts_per_page, $offset, $orderby, $order, $page);
+    $html =  fypinpo_posts_list($post_type, $category, $taxonomy, $term, $posts_per_page, $offset, $orderby, $order, $page);
 
     wp_send_json_success([
         'html' => $html
@@ -158,6 +202,7 @@ function fypinpo_ajax_load_more()
  *
  * @param string $post_type The post type to fetch.
  * @param string $category The category slug to filter by.
+ * @param string $taxonomy The taxonomy slug to filter by.
  * @param int $posts_per_page The number of posts to fetch per page.
  * @param int $offset The offset for pagination.
  * @param string $orderby The field to order by.
@@ -165,13 +210,19 @@ function fypinpo_ajax_load_more()
  * @param int $page The current page number.
  * @return string The HTML output of the posts.
  */
-function fypinpo_posts_list($post_type, $category, $posts_per_page, $offset, $orderby, $order, $page)
+function fypinpo_posts_list($post_type, $category, $taxonomy, $term, $posts_per_page, $offset, $orderby, $order, $page): string
 {
     // Validate data
     if (!post_type_exists($post_type)) {
         return false;
     }
     if (!is_string($category) && !is_int($category)) {
+        return false;
+    }
+    if (!is_string($taxonomy) && !is_int($taxonomy)) {
+        return false;
+    }
+    if (!is_string($term) && !is_int($term)) {
         return false;
     }
     if (!is_int($posts_per_page) || $posts_per_page < 1) {
@@ -202,11 +253,32 @@ function fypinpo_posts_list($post_type, $category, $posts_per_page, $offset, $or
         'order' => $order,
         'ignore_custom_sort' => true,
         'post_status' => 'publish',
-        'cat' => $category,
     ];
 
-    // Create a new WP_Query instance
-    $query = new WP_Query($args);
+    // Add category filter if specified
+    if (!empty($category)) {
+        $args['cat'] = $category;
+    }
+
+    // Add taxonomy filter if specified
+    if (!empty($taxonomy) && !empty($term)) {
+        $args['tax_query'] = [
+            [
+                'taxonomy' => $taxonomy,
+                'field' => 'term_taxonomy_id',
+                'terms' => $term,
+            ],
+        ];
+    }
+
+    $cache_key = 'fyp_infinite_posts_query_' . md5(serialize($args));
+    $query = wp_cache_get($cache_key);
+
+    if (false === $query) {
+        // Create a new WP_Query instance
+        $query = new WP_Query($args);
+        wp_cache_set($cache_key, $query, '', HOUR_IN_SECONDS);
+    }
 
     ob_start();
 

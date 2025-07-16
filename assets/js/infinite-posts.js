@@ -33,13 +33,14 @@ jQuery(document).ready(function ($) {
 
   // Fonction de chargement AJAX
   function fypinpo_loadMore($wrapper) {
-    console.log("Loading more posts");
     if (fypinpo_loading) return;
     fypinpo_loading = true;
 
     let id = $wrapper.data("id");
     let post_type = $wrapper.data("post_type") || "post";
     let category = $wrapper.data("category") || 0;
+    let taxonomy = $wrapper.data("taxonomy") || "";
+    let term = $wrapper.data("term") || "";
     let page = $wrapper.data("page") || 1;
     let posts_per_page = $wrapper.data("posts_per_page") || 10;
     let offset = $wrapper.data("offset") || 0;
@@ -55,6 +56,8 @@ jQuery(document).ready(function ($) {
         nonce: fypinpo_infinite_posts.nonce,
         post_type: post_type,
         category: category,
+        taxonomy: taxonomy,
+        term: term,
         page: page,
         posts_per_page: posts_per_page,
         offset: offset,
@@ -86,7 +89,6 @@ jQuery(document).ready(function ($) {
         console.error("AJAX error:", e);
       },
       complete: function () {
-        console.log("AJAX request completed");
         fypinpo_loading = false;
         $wrapper.find(".fypinpo_loader").hide();
         $wrapper.find(".fypinpo_load-more-btn").show();
